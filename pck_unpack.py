@@ -6,7 +6,7 @@ import sys
 import time
 
 #Change this to True if you're dealing with a Magic Gather Arena PCK file
-MGA = True
+MGA = False
 
 def log(msg, errcode):
 	print(f"Log: {msg}")
