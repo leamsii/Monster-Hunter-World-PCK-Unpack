@@ -5,9 +5,6 @@ from glob import glob
 import sys
 import time
 
-#Change this to True if you're dealing with a Magic Gather Arena PCK file
-MGA = False
-
 def log(msg, errcode):
 	print(f"Log: {msg}")
 	print("Exiting in 5 seconds..")
@@ -18,33 +15,26 @@ args = sys.argv
 if len(args) != 2:
 	log("Please specify a target .pck file! ie, pck_unpack.py target.pck")
 
+if not os.path.isfile(args[1]):
+	log(f"Error, the file {args[1]} was not found!", -1)
+
+ENDIANNESS = '<' #Little endian
 STRUCT_SIGNS = {
 	1 : 'c',
 	2 : 'H',
 	4 : 'I',
 	8 : 'Q'
 }
-ENDIANNESS = '<' #Little endian
-HEADER = {
-	'identifier' : 	{'_size' : 4, 'unpack' : False},
-	'length' : 		{'_size' : ctypes.c_uint32, 'unpack' : True},
-	'unk1' : 		{'_size' : 44, 'unpack' : False},
-	'wem_count' : 	{'_size' : ctypes.c_uint32, 'unpack' : True}
-}
+
 def unpack(_bytes):
 	return struct.unpack(ENDIANNESS + STRUCT_SIGNS[len(_bytes)], _bytes)[0]
 
-def set_header(file):
-	for prop in HEADER:
-		w_header = HEADER[prop]
+def set_pointer(file):
+	if file.read(4) != b'AKPK':
+		log("Error, this file does not have a valid AKPK structure!")
 
-		if w_header['unpack']:
-			w_header['data'] = unpack(file.read(ctypes.sizeof(w_header['_size'])))
-		else:
-			w_header['data'] = file.read(w_header['_size'])
-
-if not os.path.isfile(args[1]):
-	log(f"Error, the file {args[1]} was not found!", -1)
+	file.read(8) #Padding
+	file.seek(25 + unpack(file.read(4))) #25 skips to the sfx header
 
 
 def extract(wems, file):
@@ -70,18 +60,15 @@ def extract(wems, file):
 		os.system(f"ww2ogg {'./extracted/' + f} --pcb packed_codebooks_aoTuV_603.bin")
 		os.system("del .\\extracted\\" + f)
 
+
 with open(args[1], 'rb') as file:
-	#Collect header values
-	if MGA:
-		#For now
-		file.read(72)
-		HEADER['wem_count']['data'] = unpack(file.read(4))
-	else:
-		set_header(file)
+	
+	set_pointer(file)
+	file.read(23) if unpack(file.read(4)) != 0 else file.read(3) #Handles for Magic Arena files
 
 	#Get wems
 	wems = {}
-	for i in range(HEADER['wem_count']['data']):
+	for i in range(unpack(file.read(4))):
 		wem_id = unpack(file.read(4))
 		wem_type = unpack(file.read(4))
 		wem_length = unpack(file.read(4))
