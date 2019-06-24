@@ -1,14 +1,14 @@
 import struct
 import os
 from glob import glob
+from time import sleep
 import sys
-import time
 import subprocess
 
 def log(msg, errcode):
 	print(f"Log: {msg}")
 	print("Exiting in 5 seconds..")
-	time.sleep(5)
+	sleep(5)
 	sys.exit(errcode)
 
 args = sys.argv
