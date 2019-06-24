@@ -4,6 +4,13 @@ A quick and dirty script that extracts the .wem files inside Monster Hunter Worl
 It also works with Magic The Gathering Arena game.
 </p>
 
+<h4>Supported Formats</h4>
+<ul>
+  <li>.mtga</li>
+  <li>.pck</li>
+  <li>.npck</li>
+ </ul>
+
 <h4>Credits to Adam Gashlin (https://github.com/hcs64) for the wem2ogg converter</h4>
 
 <h3>Instructions</h3>
