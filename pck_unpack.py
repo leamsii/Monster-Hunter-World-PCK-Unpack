@@ -4,6 +4,7 @@ import ctypes
 from glob import glob
 import sys
 import time
+import subprocess
 
 def log(msg, errcode):
 	print(f"Log: {msg}")
@@ -17,6 +18,9 @@ if len(args) != 2:
 
 if not os.path.isfile(args[1]):
 	log(f"Error, the file {args[1]} was not found!", -1)
+
+if not os.path.isdir('./ww2ogg'):
+	log("Error, where the hell is the ww2ogg folder?", -1)
 
 ENDIANNESS = '<' #Little endian
 STRUCT_SIGNS = {
@@ -43,7 +47,7 @@ def extract(wems, file):
 		os.system('mkdir extracted')
 	os.chdir('extracted')
 
-	print("Log: Converting files..")
+	print(f"Log: Converting {len(wems)} .wem files..")
 
 	for w in wems:
 		file.seek(wems[w]['offset'])
@@ -57,7 +61,7 @@ def extract(wems, file):
 	os.chdir("../")
 	#Convert them to .ogg
 	for f in wem_files:
-		os.system(f"ww2ogg {'./extracted/' + f} --pcb packed_codebooks_aoTuV_603.bin")
+		subprocess.call(f"ww2ogg/ww2ogg {'./extracted/' + f} --pcb ww2ogg/packed_codebooks_aoTuV_603.bin", stdout=open(os.devnull, 'wb'))
 		os.system("del .\\extracted\\" + f)
 
 
@@ -76,11 +80,13 @@ with open(args[1], 'rb') as file:
 
 		file.read(4)
 
-		print(f"{str(i)} id:{wem_id}, wem_type:{wem_type}, length:{wem_length}, offset:{wem_offset}")
+		#print(f"{str(i)} id:{wem_id}, wem_type:{wem_type}, length:{wem_length}, offset:{wem_offset}")
 
 		#Add it
 		wems[wem_id] = {'length' : wem_length, 'offset' : wem_offset}
 
 	extract(wems, file)
+
+	print("Log: Please look inside ./extracted folder for your files.")
 
 log("Program finished.", 0)
