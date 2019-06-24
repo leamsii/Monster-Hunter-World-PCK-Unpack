@@ -1,6 +1,5 @@
 import struct
 import os
-import ctypes
 from glob import glob
 import sys
 import time
