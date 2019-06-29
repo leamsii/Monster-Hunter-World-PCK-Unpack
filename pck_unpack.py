@@ -1,9 +1,18 @@
 import struct
 import os
-from glob import glob
-from time import sleep
 import sys
 import subprocess
+from time import sleep
+from pathlib import Path
+
+
+ENDIANNESS = '<' # Little endian
+STRUCT_SIGNS = {
+	1 : 'c',
+	2 : 'H',
+	4 : 'I',
+	8 : 'Q'
+}
 
 def log(msg, errcode):
 	print(f"Log: {msg}")
@@ -11,23 +20,16 @@ def log(msg, errcode):
 	sleep(5)
 	sys.exit(errcode)
 
+# Error checking
 args = sys.argv
 if len(args) != 2:
 	log("Please specify a target .pck file! ie, pck_unpack.py target.pck")
 
-if not os.path.isfile(args[1]):
-	log(f"Error, the file {args[1]} was not found!", -1)
+if not Path(args[1]).is_file():
+	log(f"Error, that file does not exist!", -1)
 
-if not os.path.isdir('./ww2ogg'):
+if not Path('./ww2ogg').is_dir():
 	log("Error, where the hell is the ww2ogg folder?", -1)
-
-ENDIANNESS = '<' #Little endian
-STRUCT_SIGNS = {
-	1 : 'c',
-	2 : 'H',
-	4 : 'I',
-	8 : 'Q'
-}
 
 def unpack(_bytes):
 	return struct.unpack(ENDIANNESS + STRUCT_SIGNS[len(_bytes)], _bytes)[0]
@@ -36,40 +38,33 @@ def set_pointer(file):
 	if file.read(4) != b'AKPK':
 		log("Error, this file does not have a valid AKPK structure!")
 
-	file.read(8) #Padding
-	file.seek(25 + unpack(file.read(4))) #25 skips to the sfx header
-
+	file.read(8) # Padding
+	file.seek(25 + unpack(file.read(4))) # 25 skips to the sfx header
 
 def extract(wems, file):
-	#Create directory for the extracted files
-	if not os.path.isdir("./extracted"):
-		os.system('mkdir extracted')
-	os.chdir('extracted')
+	# Create directory for the extracted files
+	extracted_path = Path("extracted")
+	extracted_path.mkdir(exist_ok=True)
 
-	print(f"Log: Converting {len(wems)} .wem files..")
+	print(f"Log: Extracting {len(wems)} sound files..")
 
+	# Create the .wem files
 	for w in wems:
 		file.seek(wems[w]['offset'])
 		data = file.read(wems[w]['length'])
+		Path(extracted_path.joinpath(str(w) + '.wem')).write_bytes(data)
 
-		with open(str(w) + '.wem', 'wb') as ff:
-			ff.write(data)
-
-	wem_files = glob('*.wem')
-
-	os.chdir("../")
-	#Convert them to .ogg
-	for f in wem_files:
-		subprocess.call(f"ww2ogg/ww2ogg {'./extracted/' + f} --pcb ww2ogg/packed_codebooks_aoTuV_603.bin", stdout=open(os.devnull, 'wb'))
-		os.system("del .\\extracted\\" + f)
-
+	# Convert the .wem files to .ogg
+	for f in sorted(extracted_path.glob('*.wem')):
+		subprocess.call(f"ww2ogg/ww2ogg {str(f)} --pcb ww2ogg/packed_codebooks_aoTuV_603.bin", stdout=open(os.devnull, 'wb'))
+		os.system("del " + str(f))
 
 with open(args[1], 'rb') as file:
 	
 	set_pointer(file)
-	file.read(23) if unpack(file.read(4)) != 0 else file.read(3) #Handles for Magic Arena files
+	file.read(23) if unpack(file.read(4)) != 0 else file.read(3) # Handles for Magic Arena files
 
-	#Get wems
+	# Get wems
 	wems = {}
 	for i in range(unpack(file.read(4))):
 		wem_id = unpack(file.read(4))
@@ -77,15 +72,9 @@ with open(args[1], 'rb') as file:
 		wem_length = unpack(file.read(4))
 		wem_offset = unpack(file.read(4))
 
-		file.read(4)
+		file.read(4) # Padding
 
-		#print(f"{str(i)} id:{wem_id}, wem_type:{wem_type}, length:{wem_length}, offset:{wem_offset}")
-
-		#Add it
 		wems[wem_id] = {'length' : wem_length, 'offset' : wem_offset}
 
 	extract(wems, file)
-
-	print("Log: Please look inside ./extracted folder for your files.")
-
-log("Program finished.", 0)
+	log("Finished, look inside the 'extracted' folder.", 0)
