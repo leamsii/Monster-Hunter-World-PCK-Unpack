@@ -23,7 +23,7 @@ def log(msg, errcode):
 # Error checking
 args = sys.argv
 if len(args) != 2:
-	log("Please specify a target .pck file! ie, pck_unpack.py target.pck")
+	log("Please specify a target .pck file! ie, pck_unpack.py target.pck", -1)
 
 if not Path(args[1]).is_file():
 	log(f"Error, that file does not exist!", -1)
@@ -36,7 +36,7 @@ def unpack(_bytes):
 
 def set_pointer(file):
 	if file.read(4) != b'AKPK':
-		log("Error, this file does not have a valid AKPK structure!")
+		log("Error, this file does not have a valid AKPK header!", -1)
 
 	file.read(8) # Padding
 	file.seek(25 + unpack(file.read(4))) # 25 skips to the sfx header
