@@ -56,8 +56,8 @@ def extract(wems, file):
 
 	# Convert the .wem files to .ogg
 	for f in sorted(extracted_path.glob('*.wem')):
-		subprocess.call(f"ww2ogg/ww2ogg {str(f)} --pcb ww2ogg/packed_codebooks_aoTuV_603.bin", stdout=open(os.devnull, 'wb'))
-		os.system("del " + str(f))
+		subprocess.call(["ww2ogg/ww2ogg", str(f), "--pcb", "ww2ogg/packed_codebooks_aoTuV_603.bin"], stdout=subprocess.DEVNULL)
+		os.unlink(str(f))
 
 with open(args[1], 'rb') as file:
 	
